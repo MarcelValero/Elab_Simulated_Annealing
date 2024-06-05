@@ -206,18 +206,33 @@ def create_service_points(file_paths):
 
     This function reads service point data from a CSV file and creates a list of SP objects.
 
-    :param file_path: Path to the CSV file containing service point data
-    :type file_path: str
+    :param file_paths: Path to the CSV file containing service point data
     :return: List of service points
     :rtype: list of SP
     """
     service_points = []
     for file_path in file_paths:
         df = pd.read_csv(file_path)
+
+        # Print the columns of the DataFrame to debug the issue
+        print(f"Columns in {file_path}: {df.columns.tolist()}")
+
         for index, row in df.iterrows():
-            #assigned_squares = [square.strip() for square in row['Square'].split(';')]
-            sp = SP(id=row['Location ID'], x=row['X'], y=row['Y'], assigned_squares=[], total_dist=0, delivery=0, pickup=0, cost=0)
-            service_points.append(sp)
+            try:
+                sp = SP(
+                    id=row['Location ID'],
+                    x=row['X'],
+                    y=row['Y'],
+                    assigned_squares=[],
+                    total_dist=0,
+                    delivery=0,
+                    pickup=0,
+                    cost=0
+                )
+                service_points.append(sp)
+            except KeyError as e:
+                print(f"Missing column in file {file_path}: {e}")
+                continue
     return service_points
 
 
@@ -274,8 +289,8 @@ def simulated_annealing(original_profit, new_profit, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Initial_sp.csv'
-    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
+    sp_initial = '/Users/valero/Downloads/distance_matrix_km_filtered.csv'
+    all_neighborhoods = '/Users/valero/Downloads/predictions_milestone2 (1).csv'
     distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
 
     file_paths = [sp_initial, all_neighborhoods]
