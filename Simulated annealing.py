@@ -129,13 +129,18 @@ class InitialSolution:
                 if not isinstance(sp.SP_id, (int, str)):
                     raise TypeError(f"Service point ID {sp.SP_id} is not a valid type (int or str)")
 
-                distance = self.distance_df.at[square_id, sp.SP_id]
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_sp = sp
-            closest_sp.assigned_squares.append(square_id)
+                try:
+                    # Attempt to access distance information
+                    distance = self.distance_df.at[square_id, sp.SP_id]
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_sp = sp
+                except KeyError as e:
+                    print(f"Service point ID {sp.SP_id} is not a valid key in the distance matrix")
+                if closest_sp:
+                    closest_sp.assigned_squares.append(square_id)
 
-        print(f"Service Point {sp.sp_id} coordinates modified to ({new_x}, {new_y})")
+        print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
 
     def add_service_point(self, valid_coordinates, ):
         """
@@ -283,9 +288,9 @@ def simulated_annealing(original_profit, new_profit, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/Initial_sp.csv'  #
-    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
-    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered.csv'
+    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Elab II/Initial_sp.csv'
+    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
+    distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
