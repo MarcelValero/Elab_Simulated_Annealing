@@ -136,7 +136,13 @@ class InitialSolution:
                         min_distance = distance
                         closest_sp = sp
                 except KeyError as e:
-                    print(f"Service point ID {sp.SP_id} is not a valid key in the distance matrix")
+                    # Check if the KeyError is due to missing service point ID in the distance matrix
+                    if sp.SP_id not in self.distance_df.columns:
+                            #print(f"Service point ID {sp.SP_id} is not a valid key in the distance matrix")
+                            continue
+                    else:
+                            # KeyError is raised for other reasons, let it propagate
+                        raise e
                 if closest_sp:
                     closest_sp.assigned_squares.append(square_id)
 
@@ -185,14 +191,20 @@ class InitialSolution:
             for sp in self.service_points:
                 sp.assigned_squares = []  # Reset assigned squares
 
-            for square_id in range(len(self.distance_df[1])):  # iterate over all the squares
+            for square_id in self.distance_df.columns:  # iterate over all the squares
                 min_distance = float('inf')
                 closest_sp = None
                 for sp in self.service_points:
-                    if self.distance_df[sp.sp_id][square_id] < min_distance:
-                        min_distance = self.distance_df[sp.sp_id][square_id]
-                        closest_sp = sp
+                    if square_id in self.distance_df.index and sp.SP_id in self.distance_df.columns:
+                        if self.distance_df[sp.SP_id][square_id] < min_distance:
+                            min_distance = self.distance_df[sp.SP_id][square_id]
+                            closest_sp = sp
                 closest_sp.assigned_squares.append(square_id)
+
+            if closest_sp is None:
+                print(f"No closest service point found for square ID: {square_id}")
+
+            return deleted_sp
 
     def select_random_coordinate(self, valid_coordinates):
         """
@@ -294,7 +306,7 @@ def main():
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
-    distance_df = pd.read_csv(distance_matrix)
+    distance_df = pd.read_csv(distance_matrix, skiprows=[0])
 
     # Generate initial solution
     initial_solution = InitialSolution(ServiceP, distance_df)
