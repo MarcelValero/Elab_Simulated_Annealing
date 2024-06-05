@@ -322,9 +322,9 @@ def simulated_annealing(current_cost, new_cost, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/Initial_sp.csv'
-    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
-    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered.csv'
+    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Elab II/Initial_sp.csv'
+    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
+    distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
