@@ -24,8 +24,8 @@ class SP:
     :param cost: service point cost
     """
 
-    def __init__(self, SP_id, x, y, assigned_squares, total_dist, delivery, pickup, cost):
-        self.SP_id = SP_id
+    def __init__(self, id, x, y, assigned_squares, total_dist=0, delivery=0, pickup=0, cost=0):
+        self.SP_id = id
         self.x = x
         self.y = y
         self.assigned_squares = assigned_squares
@@ -77,6 +77,10 @@ class InitialSolution:
         self.service_points = service_points
         self.distance_df = distance_df
 
+        # Initialize assigned squares for each service point
+        for sp in self.service_points:
+            sp.assigned_squares = [square_id for square_id in distance_df.index if sp.SP_id in distance_df.columns]
+
     def __repr__(self):
         return f"InitialSolution(service_points={self.service_points})"
 
@@ -90,9 +94,23 @@ class InitialSolution:
         :return: cost of the initial solution
         :rtype: float
         """
-        # distance to all the squares assigned to the sp * sum of expected deliveries for every square
+        # Calculate total distance from service points to squares
         for sp in self.service_points:
-            sp.total_dist = sum(self.distance_df[sp.sp_id][square_id] for square_id in sp.assigned_squares)
+            sp_id = str(sp.SP_id)
+            if sp_id not in self.distance_df.columns:
+                raise KeyError(f"Service point ID {sp_id} not found in distance_df columns")
+            for square_id in sp.assigned_squares:
+                if square_id not in self.distance_df.index:
+                    raise KeyError(f"Square ID {square_id} not found in distance_df index")
+                sp.total_dist += self.distance_df.loc[square_id, sp_id]
+
+        # Calculate total distance from squares to service points
+        for square_id, row in self.distance_df.iterrows():
+            for sp in self.service_points:
+                sp_id = str(sp.SP_id)
+                if square_id not in sp.assigned_squares:
+                    continue
+                sp.total_dist += row[sp_id]
 
         cost = 0
         for sp in self.service_points:
@@ -118,12 +136,12 @@ class InitialSolution:
         for sp in self.service_points:
             sp.assigned_squares = []  # Reset assigned squares
 
-        for square_id in range(len(self.distance_df[1])):  # iterate over all the squares
+        for square_id in self.distance_df.columns: # iterate over all the squares
             min_distance = float('inf')
             closest_sp = None
             for sp in self.service_points:
-                if self.distance_df[sp.sp_id][square_id] < min_distance:
-                    min_distance = self.distance_df[sp.sp_id][square_id]
+                if self.distance_df[sp.SP_id][square_id] < min_distance:
+                    min_distance = self.distance_df[sp.SP_id][square_id]
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
 
@@ -151,8 +169,8 @@ class InitialSolution:
             min_distance = float('inf')
             closest_sp = None
             for sp in self.service_points:
-                if self.distance_df[sp.sp_id][square_id] < min_distance:
-                    min_distance = self.distance_df[sp.sp_id][square_id]
+                if self.distance_df[sp.SP_id][square_id] < min_distance:
+                    min_distance = self.distance_df[sp.SP_id][square_id]
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
 
@@ -196,7 +214,7 @@ class InitialSolution:
         return random_row['Square_ID'], random_row['coordinate.x'], random_row['coordinates.y']
 
 
-def create_service_points(file_path):
+def create_service_points(file_paths):
     """
     Create a list of service points from a CSV file.
 
@@ -207,11 +225,13 @@ def create_service_points(file_path):
     :return: List of service points
     :rtype: list of SP
     """
-    df = pd.read_csv(file_path)
     service_points = []
-    for index, row in df.iterrows():
-        sp = SP([1], [2], [3], 0, 0, 0, 0, 0)
-        service_points.append(sp)
+    for file_path in file_paths:
+        df = pd.read_csv(file_path)
+        for index, row in df.iterrows():
+            #assigned_squares = [square.strip() for square in row['Square'].split(';')]
+            sp = SP(id=row['Location ID'], x=row['X'], y=row['Y'], assigned_squares=[], total_dist=0, delivery=0, pickup=0, cost=0)
+            service_points.append(sp)
     return service_points
 
 
@@ -227,7 +247,8 @@ def load_valid_coordinates(file_path):
     :rtype: list of tuple
     """
     df = pd.read_csv(file_path)
-    valid_coordinates = list(zip(df['x'], df['y']))
+    print(df.columns)  # Add this line to print the columns of the DataFrame
+    valid_coordinates = list(zip(df['X'], df['Y']))
     return valid_coordinates
 
 
@@ -242,7 +263,8 @@ def select_random_coordinate(valid_coordinates):
     :return: Random (x, y) coordinate
     :rtype: tuple
     """
-    return random.choice(valid_coordinates)
+    random_coordinate = random.choice(valid_coordinates)
+    return random_coordinate
 
 
 def simulated_annealing(original_profit, new_profit, temperature):
@@ -266,13 +288,29 @@ def simulated_annealing(original_profit, new_profit, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/Initial_sp.csv'  #
-    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
-    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_indexed.csv'
+    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Initial_sp.csv'
+    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
+    distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
 
-    ServiceP = create_service_points(sp_initial)
+    file_paths = [sp_initial, all_neighborhoods]
+    ServiceP = create_service_points(file_paths)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
     distance_df = pd.read_csv(distance_matrix)
+
+    distance_df.columns = distance_df.columns.astype(str)  # Ensure all column names are strings
+    distance_df.index = distance_df.index.astype(str)  # Ensure all index names are strings
+
+    # Filter distance_df to include only relevant service point IDs
+    sp_ids = [str(sp.SP_id) for sp in ServiceP]
+    sp_distance_df = distance_df[sp_ids]
+
+    # Print DataFrames to verify contents
+    print("Service Points DataFrame:")
+    print(ServiceP)
+    print("Valid Coordinates DataFrame:")
+    print(valid_coordinates)
+    print("Distance DataFrame:")
+    print(distance_df.head())
 
     # Generate initial solution
     initial_solution = InitialSolution(ServiceP, distance_df)
