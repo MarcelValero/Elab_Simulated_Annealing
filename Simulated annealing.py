@@ -104,7 +104,7 @@ class InitialSolution:
         Randomly select a service point and modify its coordinates.
 
         This method selects a random service point from the list and assigns it new coordinates
-        chosen randomly from the list of valid coordinates.
+        chosen randomly from the list valid coordinates.
 
         :param valid_coordinates: List of tuples representing valid (x, y) coordinates
         :type valid_coordinates: list of tuple
