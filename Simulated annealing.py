@@ -332,7 +332,8 @@ def main():
     print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
-    initial_temperature = 40000000
+    initial_temperature = 400000
+    temperature = initial_temperature
 
     for i in range(1, 3500):
         print(f"Iteration {i}, current cost: {current_cost}")
