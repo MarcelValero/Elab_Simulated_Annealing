@@ -55,7 +55,7 @@ class Square:  # this will be used as the available coordinates for new service 
         self.y = y
 
     def __repr__(self):
-        return f"Square(x={self.x}, y={self.y}, sp_dist={self.sp_dist}, pickup={self.pickup}, delivery={self.delivery})"
+        return f"Square(x={self.x}, y={self.y}, pickup={self.pickup}, delivery={self.delivery})"
 
 
 class InitialSolution:
@@ -335,17 +335,17 @@ def main():
     initial_temperature = 400000
     temperature = initial_temperature
 
-    for i in range(1, 3500):
+    for i in range(1, 350):
         print(f"Iteration {i}, current cost: {current_cost}")
 
         # Generate a new solution by modifying, adding, or deleting a service point
         new_solution = InitialSolution(ServiceP.copy(), distance_df.copy())  # Ensure a deep copy if necessary
         rand = random.random()
 
-        if rand <= 0.3:
+        if rand <= 0.1:
             print(f"Iteration {i}: Delete Service Point")
             new_solution.delete_service_point()
-        elif rand <= 0.2:
+        elif rand <= 0.6:
             print(f"Iteration {i}: Add Service Point")
             new_solution.add_service_point(valid_coordinates)
         else:
@@ -367,7 +367,7 @@ def main():
     print(f"Final cost: {current_cost}")
     print(f"Number of Service Points: {len(initial_solution.service_points)}")
     print("Service Points IDs:")
-    print([sp.SP_id for sp in initial_solution.service_points])
+    print([sp.total_dist for sp in initial_solution.service_points])
 
 
 if __name__ == "__main__":
