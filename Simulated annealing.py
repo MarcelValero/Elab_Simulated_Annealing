@@ -296,20 +296,25 @@ def select_random_coordinate(valid_coordinates):
     return random.choice(valid_coordinates)
 
 
-def simulated_annealing(original_profit, new_profit, temperature):
+def simulated_annealing(current_cost, new_cost, temperature):
     """
     Perform the simulated annealing acceptance criterion.
 
-    :param original_profit: The profit of the original solution
-    :type original_profit: float
-    :param new_profit: The profit of the new solution
-    :type new_profit: float
+    :param current_cost: The profit of the original solution
+    :type current_cost: float
+    :param new_cost: The profit of the new solution
+    :type new_cost: float
     :param temperature: The current temperature in the simulated annealing process
     :type temperature: float
     :return: Whether the new solution should be accepted
     :rtype: bool
     """
-    probability = math.exp((new_profit - original_profit) / temperature)
+    # Calculate the exponent and cap it to avoid overflow
+    exponent = (current_cost - new_cost) / temperature
+    max_exponent = 700  # This value ensures that math.exp does not overflow
+    exponent = min(exponent, max_exponent)
+
+    probability = math.exp(exponent)
     math_random = random.random()
 
     return probability >= math_random
@@ -332,7 +337,8 @@ def main():
     print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
-    temperature = 40
+    initial_temperature = 400000
+    temperature = initial_temperature
 
     for i in range(1, 350):
         print(f"Iteration {i}, current cost: {current_cost}")
@@ -352,7 +358,7 @@ def main():
             new_solution.modify_service_point(valid_coordinates)
 
         new_cost = new_solution.total_cost()
-        temperature = 400000 / i  # Update temperature
+        temperature = initial_temperature / (i + 1)  # Update temperature
 
         # Apply the simulated annealing acceptance criterion
         if simulated_annealing(current_cost, new_cost, temperature):
