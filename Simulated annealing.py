@@ -97,6 +97,8 @@ class InitialSolution:
         cost = 0
         for sp in self.service_points:
             cost += 75000 + 0.1 * sp.pickup + 0.5 * sp.total_dist
+        for sp in self.service_points:
+            print(f"Service Point {sp.SP_id} has a total distance of {sp.total_dist} and a cost of {sp.cost}")
         return cost
 
     def modify_service_point(self, valid_coordinates):
@@ -114,20 +116,26 @@ class InitialSolution:
         sp.x = new_x
         sp.y = new_y
 
-        # Re-assign the closest squares to all the service points
+        # Reset assigned squares for all service points
         for sp in self.service_points:
-            sp.assigned_squares = []  # Reset assigned squares
+            sp.assigned_squares = []
 
-        for square_id in range(len(self.distance_df[1])):  # iterate over all the squares
+        # Re-assign the closest squares to all the service points
+        for square_id in self.distance_df.index:  # iterate over all the squares
             min_distance = float('inf')
             closest_sp = None
             for sp in self.service_points:
-                if self.distance_df[sp.sp_id][square_id] < min_distance:
-                    min_distance = self.distance_df[sp.sp_id][square_id]
+                # Ensure sp.sp_id is a single value
+                if not isinstance(sp.SP_id, (int, str)):
+                    raise TypeError(f"Service point ID {sp.SP_id} is not a valid type (int or str)")
+
+                distance = self.distance_df.at[square_id, sp.SP_id]
+                if distance < min_distance:
+                    min_distance = distance
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
 
-        print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
+        print(f"Service Point {sp.sp_id} coordinates modified to ({new_x}, {new_y})")
 
     def add_service_point(self, valid_coordinates, ):
         """
@@ -207,10 +215,19 @@ def create_service_points(file_path):
     :return: List of service points
     :rtype: list of SP
     """
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, delimiter=';')
     service_points = []
     for index, row in df.iterrows():
-        sp = SP([3], [1], [2], [], 0, 0, 0, 0)
+        sp = SP(
+            SP_id=row[2],
+            x=row[0],
+            y=row[1],
+            assigned_squares=[],
+            total_dist=0,
+            delivery=0,
+            pickup=0,
+            cost=0
+        )
         service_points.append(sp)
     print(f"Loaded {len(service_points)} service points")
     return service_points
@@ -289,9 +306,9 @@ def main():
         temperature = 45000000 / i
         rand = random.random()
 
-        if rand <= 0.02:
+        if rand <= 0.001:
             initial_solution.delete_service_point()
-        elif rand <= 0.2:  # need to adapt the adding logic
+        elif rand <= 0.001:  # need to adapt the adding logic
             initial_solution.add_service_point(valid_coordinates)
         else:
             initial_solution.modify_service_point(valid_coordinates)
