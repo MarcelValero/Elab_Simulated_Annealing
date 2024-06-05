@@ -130,7 +130,6 @@ class InitialSolution:
                     raise TypeError(f"Service point ID {sp.SP_id} is not a valid type (int or str)")
 
                 try:
-                    # Attempt to access distance information
                     distance = self.distance_df.at[square_id, sp.SP_id]
                     if distance < min_distance:
                         min_distance = distance
@@ -141,10 +140,8 @@ class InitialSolution:
                             #print(f"Service point ID {sp.SP_id} is not a valid key in the distance matrix")
                             continue
                     else:
-                            # KeyError is raised for other reasons, let it propagate
                         raise e
-                if closest_sp:
-                    closest_sp.assigned_squares.append(square_id)
+                closest_sp.assigned_squares.append(square_id)
 
         print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
 
@@ -184,8 +181,8 @@ class InitialSolution:
         This method randomly selects a service point from the list and removes it.
         """
         if self.service_points:
-            self.service_points.pop(random.randint(0, len(self.service_points) - 1))
-            print("Random Service Point deleted")
+            deleted_sp = self.service_points.pop(random.randint(0, len(self.service_points) - 1))
+            print(f"Random Service Point {deleted_sp} deleted")
 
             # Re-assign the closest squares to all the service points
             for sp in self.service_points:
@@ -199,12 +196,19 @@ class InitialSolution:
                         if self.distance_df[sp.SP_id][square_id] < min_distance:
                             min_distance = self.distance_df[sp.SP_id][square_id]
                             closest_sp = sp
-                closest_sp.assigned_squares.append(square_id)
 
-            if closest_sp is None:
-                print(f"No closest service point found for square ID: {square_id}")
+                if closest_sp is not None:
+                    closest_sp.assigned_squares.append(square_id)
+                else:
+                    print(f"No closest service point found for square ID: {square_id}")
+                    continue  # Continue the loop without raising an AttributeError
 
-            return deleted_sp
+                try:
+                    closest_sp.assigned_squares.append(square_id)
+                except AttributeError as e:
+                    print(f"Error occurred: {e}")
+
+        return deleted_sp
 
     def select_random_coordinate(self, valid_coordinates):
         """
@@ -314,21 +318,28 @@ def main():
     print(f"Initial cost: {initial_solution.total_cost()}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
-    temperature = 45000000
+    temperature = 40
 
-    for i in range(1, 350000001):
+    for i in range(1, 350):
         if i % 1000000 == 0:
             print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
 
-        temperature = 45000000 / i
+        temperature = 40 / i
         rand = random.random()
 
         if rand <= 0.001:
+            print(f"Iteration{i}: Delete Service Point")
             initial_solution.delete_service_point()
-        elif rand <= 0.001:  # need to adapt the adding logic
+            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
+
+        elif rand <= 0.1:  # need to adapt the adding logic
+            print(f"Iteration{i}: Add Service Point")
             initial_solution.add_service_point(valid_coordinates)
+            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
         else:
+            print(f"Iteration{i}: Modify Service Point")
             initial_solution.modify_service_point(valid_coordinates)
+            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
 
     print("FINAL SOLUTION")
     print(f"Final Profit: {initial_solution.total_cost()}")
