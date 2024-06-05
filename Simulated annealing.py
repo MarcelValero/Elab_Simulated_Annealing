@@ -80,6 +80,23 @@ class InitialSolution:
     def __repr__(self):
         return f"InitialSolution(service_points={self.service_points})"
 
+    def select_random_coordinate(self, valid_coordinates):
+        """
+        Select a random coordinate from the CSV file.
+
+        This method reads the CSV file, selects a random row, and returns the ID, x coordinate,
+        and y coordinate from that row.
+
+        :return: A tuple representing the chosen (id, x, y) coordinate
+        :rtype: tuple
+        """
+        df = valid_coordinates
+        random_row = df.sample()
+        square_id = random_row['Square_ID'].values[0]
+        x = random_row['coordinate.x'].values[0]
+        y = random_row['coordinate.y'].values[0]
+        return square_id, x, y
+
     def total_cost(self):
         """
         Calculate the cost of the initial solution.
@@ -97,8 +114,6 @@ class InitialSolution:
         cost = 0
         for sp in self.service_points:
             cost += 75000 + 0.1 * sp.pickup + 0.5 * sp.total_dist
-        for sp in self.service_points:
-            print(f"Service Point {sp.SP_id} has a total distance of {sp.total_dist} and a cost of {sp.cost}")
         return cost
 
     def modify_service_point(self, valid_coordinates):
@@ -112,12 +127,11 @@ class InitialSolution:
         :type valid_coordinates: list of tuple
         """
         sp = random.choice(self.service_points)
-        new_x, new_y = select_random_coordinate(valid_coordinates)
+        new_id, new_x, new_y = self.select_random_coordinate(valid_coordinates)
         sp.x = new_x
         sp.y = new_y
 
         print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
-
         # Reset assigned squares for all service points
         for sp in self.service_points:
             sp.assigned_squares = []
@@ -147,22 +161,28 @@ class InitialSolution:
 
         :param valid_coordinates: List of potential coordinates to build a service point
         """
-        chosen_coordinate = self.select_random_coordinate(valid_coordinates)
-        new_id, new_x, new_y = chosen_coordinate
-        new_sp = SP(new_id, new_x, new_y)
+
+        new_id, new_x, new_y = self.select_random_coordinate(valid_coordinates)
+        new_sp = SP(new_id, new_x, new_y, [], 0, 0, 0, 0)
         self.service_points.append(new_sp)
-        print(f"New Service Point added with ID {new_id} at coordinates ({new_x}, {new_y})")
+        print(f"New Service Point added with ID {new_id} and coordinates ({new_x}, {new_y})")
+
+        # Reset assigned squares for all service points
+        for sp in self.service_points:
+            sp.assigned_squares = []
 
         # Re-assign the closest squares to all the service points
-        for sp in self.service_points:
-            sp.assigned_squares = []  # Reset assigned squares
-
-        for square_id in range(len(self.distance_df[1])):  # iterate over all the squares
+        for square_id in self.distance_df.index:  # iterate over all the squares
             min_distance = float('inf')
             closest_sp = None
             for sp in self.service_points:
-                if self.distance_df[sp.sp_id][square_id] < min_distance:
-                    min_distance = self.distance_df[sp.sp_id][square_id]
+                # Ensure sp.sp_id is a single value
+                if not isinstance(sp.SP_id, (int, str)):
+                    raise TypeError(f"Service point ID {sp.SP_id} is not a valid type (int or str)")
+
+                distance = self.distance_df.at[square_id, sp.SP_id]
+                if distance < min_distance:
+                    min_distance = distance
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
 
@@ -176,32 +196,24 @@ class InitialSolution:
             self.service_points.pop(random.randint(0, len(self.service_points) - 1))
             print("Random Service Point deleted")
 
-            # Re-assign the closest squares to all the service points
+            # Reset assigned squares for all service points
             for sp in self.service_points:
-                sp.assigned_squares = []  # Reset assigned squares
+                sp.assigned_squares = []
 
-            for square_id in range(len(self.distance_df[1])):  # iterate over all the squares
+            # Re-assign the closest squares to all the service points
+            for square_id in self.distance_df.index:  # iterate over all the squares
                 min_distance = float('inf')
                 closest_sp = None
                 for sp in self.service_points:
-                    if self.distance_df[sp.sp_id][square_id] < min_distance:
-                        min_distance = self.distance_df[sp.sp_id][square_id]
+                    # Ensure sp.sp_id is a single value
+                    if not isinstance(sp.SP_id, (int, str)):
+                        raise TypeError(f"Service point ID {sp.SP_id} is not a valid type (int or str)")
+
+                    distance = self.distance_df.at[square_id, sp.SP_id]
+                    if distance < min_distance:
+                        min_distance = distance
                         closest_sp = sp
                 closest_sp.assigned_squares.append(square_id)
-
-    def select_random_coordinate(self, valid_coordinates):
-        """
-                Select a random coordinate from the CSV file.
-
-                This method reads the CSV file, selects a random row, and returns the ID, x coordinate,
-                and y coordinate from that row.
-
-                :return: A tuple representing the chosen (id, x, y) coordinate
-                :rtype: tuple
-                """
-        df = valid_coordinates
-        random_row = df.sample(n=1).iloc[0]
-        return random_row['Square_ID'], random_row['coordinate.x'], random_row['coordinates.y']
 
 
 def create_service_points(file_path):
@@ -244,22 +256,8 @@ def load_valid_coordinates(valid_coordinates):
     :rtype: list of tuple
     """
     df = pd.read_csv(valid_coordinates)
-    valid_coordinates = list(zip(df['coordinate.x'], df['coordinate.y']))
+    valid_coordinates = df[['Square_ID', 'coordinate.x', 'coordinate.y']]
     return valid_coordinates
-
-
-def select_random_coordinate(valid_coordinates):
-    """
-    Select a random coordinate from the list of valid coordinates.
-
-    This function returns a random (x, y) coordinate from the provided list of valid coordinates.
-
-    :param valid_coordinates: List of tuples representing valid (x, y) coordinates
-    :type valid_coordinates: list of tuple
-    :return: Random (x, y) coordinate
-    :rtype: tuple
-    """
-    return random.choice(valid_coordinates)
 
 
 def simulated_annealing(original_profit, new_profit, temperature):
@@ -308,7 +306,7 @@ def main():
 
         if rand <= 0.001:
             initial_solution.delete_service_point()
-        elif rand <= 0.001:  # need to adapt the adding logic
+        elif rand <= 0.99:  # need to adapt the adding logic
             initial_solution.add_service_point(valid_coordinates)
         else:
             initial_solution.modify_service_point(valid_coordinates)
