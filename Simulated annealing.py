@@ -344,19 +344,19 @@ def main():
         if rand <= 0.1:
             print(f"Iteration{i}: Delete Service Point")
             initial_solution.delete_service_point()
-            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
+            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
 
-        elif rand <= 0.3:  # need to adapt the adding logic
+        elif rand <= 0.2:  # need to adapt the adding logic
             print(f"Iteration{i}: Add Service Point")
             initial_solution.add_service_point(valid_coordinates)
-            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
+            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
         else:
             print(f"Iteration{i}: Modify Service Point")
             initial_solution.modify_service_point(valid_coordinates)
-            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
+            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
 
     print("FINAL SOLUTION")
-    print(f"Final Profit: {initial_solution.total_cost()}")
+    print(f"Final total_costs: {initial_solution.total_cost()}")
     # Implement is_valid_solution logic if applicable
     print("Solution is valid:", True)
 
