@@ -332,10 +332,9 @@ def main():
     print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
-    initial_temperature = 400000
-    temperature = initial_temperature
+    initial_temperature = 40000000
 
-    for i in range(1, 350):
+    for i in range(1, 3500):
         print(f"Iteration {i}, current cost: {current_cost}")
 
         # Generate a new solution by modifying, adding, or deleting a service point
@@ -345,7 +344,7 @@ def main():
         if rand <= 0.3:
             print(f"Iteration {i}: Delete Service Point")
             new_solution.delete_service_point()
-        elif rand <= 0.4:
+        elif rand <= 0.2:
             print(f"Iteration {i}: Add Service Point")
             new_solution.add_service_point(valid_coordinates)
         else:
@@ -365,7 +364,9 @@ def main():
 
     print("FINAL SOLUTION")
     print(f"Final cost: {current_cost}")
-    print("Solution is valid:", True)
+    print(f"Number of Service Points: {len(initial_solution.service_points)}")
+    print("Service Points IDs:")
+    print([sp.SP_id for sp in initial_solution.service_points])
 
 
 if __name__ == "__main__":
