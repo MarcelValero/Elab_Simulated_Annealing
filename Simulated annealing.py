@@ -336,7 +336,7 @@ def main():
 
     for i in range(1, 350):
         if i % 1000000 == 0:
-            print(f"Iteration {i}, Profit: {initial_solution.total_cost()}")
+            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
 
         temperature = 40 / i
         rand = random.random()
