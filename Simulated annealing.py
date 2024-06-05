@@ -94,23 +94,9 @@ class InitialSolution:
         :return: cost of the initial solution
         :rtype: float
         """
-        # Calculate total distance from service points to squares
+        # distance to all the squares assigned to the sp * sum of expected deliveries for every square
         for sp in self.service_points:
-            sp_id = str(sp.SP_id)
-            if sp_id not in self.distance_df.columns:
-                raise KeyError(f"Service point ID {sp_id} not found in distance_df columns")
-            for square_id in sp.assigned_squares:
-                if square_id not in self.distance_df.index:
-                    raise KeyError(f"Square ID {square_id} not found in distance_df index")
-                sp.total_dist += self.distance_df.loc[square_id, sp_id]
-
-        # Calculate total distance from squares to service points
-        for square_id, row in self.distance_df.iterrows():
-            for sp in self.service_points:
-                sp_id = str(sp.SP_id)
-                if square_id not in sp.assigned_squares:
-                    continue
-                sp.total_dist += row[sp_id]
+            sp.total_dist = sum(self.distance_df[sp.SP_id][square_id] for square_id in sp.assigned_squares)
 
         cost = 0
         for sp in self.service_points:
@@ -299,10 +285,6 @@ def main():
 
     distance_df.columns = distance_df.columns.astype(str)  # Ensure all column names are strings
     distance_df.index = distance_df.index.astype(str)  # Ensure all index names are strings
-
-    # Filter distance_df to include only relevant service point IDs
-    sp_ids = [str(sp.SP_id) for sp in ServiceP]
-    sp_distance_df = distance_df[sp_ids]
 
     # Print DataFrames to verify contents
     print("Service Points DataFrame:")
