@@ -116,6 +116,8 @@ class InitialSolution:
         sp.x = new_x
         sp.y = new_y
 
+        print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
+
         # Reset assigned squares for all service points
         for sp in self.service_points:
             sp.assigned_squares = []
@@ -135,7 +137,6 @@ class InitialSolution:
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
 
-        print(f"Service Point {sp.sp_id} coordinates modified to ({new_x}, {new_y})")
 
     def add_service_point(self, valid_coordinates, ):
         """
@@ -150,6 +151,7 @@ class InitialSolution:
         new_id, new_x, new_y = chosen_coordinate
         new_sp = SP(new_id, new_x, new_y)
         self.service_points.append(new_sp)
+        print(f"New Service Point added with ID {new_id} at coordinates ({new_x}, {new_y})")
 
         # Re-assign the closest squares to all the service points
         for sp in self.service_points:
@@ -163,8 +165,6 @@ class InitialSolution:
                     min_distance = self.distance_df[sp.sp_id][square_id]
                     closest_sp = sp
             closest_sp.assigned_squares.append(square_id)
-
-        print(f"New Service Point added with ID {new_id} at coordinates ({new_x}, {new_y})")
 
     def delete_service_point(self):
         """
@@ -215,13 +215,13 @@ def create_service_points(file_path):
     :return: List of service points
     :rtype: list of SP
     """
-    df = pd.read_csv(file_path, delimiter=';')
+    df = pd.read_csv(file_path)
     service_points = []
     for index, row in df.iterrows():
         sp = SP(
-            SP_id=row[2],
-            x=row[0],
-            y=row[1],
+            SP_id=row[1],
+            x=row[2],
+            y=row[3],
             assigned_squares=[],
             total_dist=0,
             delivery=0,
@@ -283,7 +283,7 @@ def simulated_annealing(original_profit, new_profit, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/Initial_sp.csv'  #
+    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/fakesol.csv'  #
     all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
     distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered.csv'
 
