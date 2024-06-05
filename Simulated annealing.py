@@ -283,9 +283,6 @@ def main():
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
     distance_df = pd.read_csv(distance_matrix)
 
-    distance_df.columns = distance_df.columns.astype(str)  # Ensure all column names are strings
-    distance_df.index = distance_df.index.astype(str)  # Ensure all index names are strings
-
     # Print DataFrames to verify contents
     print("Service Points DataFrame:")
     print(ServiceP)
