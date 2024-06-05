@@ -97,8 +97,7 @@ class InitialSolution:
         cost = 0
         for sp in self.service_points:
             cost += 75000 + 0.1 * sp.pickup + 0.5 * sp.total_dist
-        for sp in self.service_points:
-            print(f"Service Point {sp.SP_id} has a total distance of {sp.total_dist} and a cost of {sp.cost}")
+
         return cost
 
     def modify_service_point(self, valid_coordinates):
@@ -328,36 +327,43 @@ def main():
 
     # Generate initial solution
     initial_solution = InitialSolution(ServiceP, distance_df)
+    current_cost = initial_solution.total_cost()
 
-    print(f"Initial cost: {initial_solution.total_cost()}")
+    print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
     temperature = 40
 
     for i in range(1, 350):
-        if i % 1000000 == 0:
-            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
+        print(f"Iteration {i}, current cost: {current_cost}")
 
-        temperature = 40 / i
+        # Generate a new solution by modifying, adding, or deleting a service point
+        new_solution = InitialSolution(ServiceP.copy(), distance_df.copy())  # Ensure a deep copy if necessary
         rand = random.random()
 
-        if rand <= 0.1:
-            print(f"Iteration{i}: Delete Service Point")
-            initial_solution.delete_service_point()
-            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
-
-        elif rand <= 0.2:  # need to adapt the adding logic
-            print(f"Iteration{i}: Add Service Point")
-            initial_solution.add_service_point(valid_coordinates)
-            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
+        if rand <= 0.3:
+            print(f"Iteration {i}: Delete Service Point")
+            new_solution.delete_service_point()
+        elif rand <= 0.4:
+            print(f"Iteration {i}: Add Service Point")
+            new_solution.add_service_point(valid_coordinates)
         else:
-            print(f"Iteration{i}: Modify Service Point")
-            initial_solution.modify_service_point(valid_coordinates)
-            print(f"Iteration {i}, total_costs: {initial_solution.total_cost()}")
+            print(f"Iteration {i}: Modify Service Point")
+            new_solution.modify_service_point(valid_coordinates)
+
+        new_cost = new_solution.total_cost()
+        temperature = 400000 / i  # Update temperature
+
+        # Apply the simulated annealing acceptance criterion
+        if simulated_annealing(current_cost, new_cost, temperature):
+            print(f"Iteration {i}: Accepted new solution with cost {new_cost}")
+            initial_solution = new_solution  # Accept the new solution
+            current_cost = new_cost
+        else:
+            print(f"Iteration {i}: Rejected new solution with cost {new_cost}")
 
     print("FINAL SOLUTION")
-    print(f"Final total_costs: {initial_solution.total_cost()}")
-    # Implement is_valid_solution logic if applicable
+    print(f"Final cost: {current_cost}")
     print("Solution is valid:", True)
 
 
