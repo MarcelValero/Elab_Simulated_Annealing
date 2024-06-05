@@ -92,7 +92,7 @@ class InitialSolution:
         """
         # distance to all the squares assigned to the sp * sum of expected deliveries for every square
         for sp in self.service_points:
-            sp.total_dist = sum(self.distance_df[sp.sp_id][square_id] for square_id in sp.assigned_squares)
+            sp.total_dist = sum(self.distance_df[sp.SP_id][square_id] for square_id in sp.assigned_squares)
 
         cost = 0
         for sp in self.service_points:
@@ -112,6 +112,7 @@ class InitialSolution:
         """
         sp = random.choice(self.service_points)
         new_id, new_x, new_y = select_random_coordinate(valid_coordinates)
+        sp.SP_id = new_id
         sp.x = new_x
         sp.y = new_y
 
@@ -136,7 +137,6 @@ class InitialSolution:
                 except KeyError as e:
                     # Check if the KeyError is due to missing service point ID in the distance matrix
                     if sp.SP_id not in self.distance_df.columns:
-                            #print(f"Service point ID {sp.SP_id} is not a valid key in the distance matrix")
                             continue
                     else:
                         raise e
@@ -195,31 +195,29 @@ class InitialSolution:
         """
         if self.service_points:
             deleted_sp = self.service_points.pop(random.randint(0, len(self.service_points) - 1))
-            print(f"Random Service Point {deleted_sp} deleted")
+            print(f"Random Service Point {deleted_sp.SP_id} deleted")
 
-            # Re-assign the closest squares to all the service points
+            # Re-assign the closest squares to all the remaining service points
             for sp in self.service_points:
                 sp.assigned_squares = []  # Reset assigned squares
 
-            for square_id in self.distance_df.columns:  # iterate over all the squares
+            for square_id in self.distance_df.index:  # iterate over all the squares
                 min_distance = float('inf')
                 closest_sp = None
                 for sp in self.service_points:
-                    if square_id in self.distance_df.index and sp.SP_id in self.distance_df.columns:
-                        if self.distance_df[sp.SP_id][square_id] < min_distance:
-                            min_distance = self.distance_df[sp.SP_id][square_id]
+                    try:
+                        distance = self.distance_df.at[square_id, sp.SP_id]
+                        if distance < min_distance:
+                            min_distance = distance
                             closest_sp = sp
+                    except KeyError:
+                        print(f"No valid distance entry for SP_id: {sp.SP_id} and square_id: {square_id}")
+                        continue
 
                 if closest_sp is not None:
                     closest_sp.assigned_squares.append(square_id)
                 else:
                     print(f"No closest service point found for square ID: {square_id}")
-                    continue  # Continue the loop without raising an AttributeError
-
-                try:
-                    closest_sp.assigned_squares.append(square_id)
-                except AttributeError as e:
-                    print(f"Error occurred: {e}")
 
         return deleted_sp
 
@@ -249,13 +247,13 @@ def create_service_points(file_path):
     :return: List of service points
     :rtype: list of SP
     """
-    df = pd.read_csv(file_path, delimiter=';')
+    df = pd.read_csv(file_path)
     service_points = []
     for index, row in df.iterrows():
         sp = SP(
-            SP_id=row[2],
-            x=row[0],
-            y=row[1],
+            SP_id=row[0],
+            x=row[1],
+            y=row[2],
             assigned_squares=[],
             total_dist=0,
             delivery=0,
@@ -309,10 +307,7 @@ def simulated_annealing(current_cost, new_cost, temperature):
     :return: Whether the new solution should be accepted
     :rtype: bool
     """
-    # Calculate the exponent and cap it to avoid overflow
     exponent = (current_cost - new_cost) / temperature
-    max_exponent = 700  # This value ensures that math.exp does not overflow
-    exponent = min(exponent, max_exponent)
 
     probability = math.exp(exponent)
     math_random = random.random()
@@ -322,13 +317,13 @@ def simulated_annealing(current_cost, new_cost, temperature):
 
 def main():
     # Load data
-    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Elab II/Initial_sp.csv'
-    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
-    distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
+    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/fakesol.csv'
+    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
+    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered.csv'
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
-    distance_df = pd.read_csv(distance_matrix, skiprows=[0])
+    distance_df = pd.read_csv(distance_matrix)
 
     # Generate initial solution
     initial_solution = InitialSolution(ServiceP, distance_df)
