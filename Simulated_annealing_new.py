@@ -55,7 +55,7 @@ class Square:  # this will be used as the available coordinates for new service 
         self.y = y
 
     def __repr__(self):
-        return f"Square(x={self.x}, y={self.y}, sp_dist={self.sp_dist}, pickup={self.pickup}, delivery={self.delivery})"
+        return f"Square(x={self.x}, y={self.y}, pickup={self.pickup}, delivery={self.delivery})"
 
 
 class InitialSolution:
@@ -98,21 +98,14 @@ class InitialSolution:
         valid_coordinates_df = pd.DataFrame(valid_coordinates, columns=['Square_ID', 'coordinate.x', 'coordinate.y',
                                                                         'daily_pickup_capacity',
                                                                         'daily_delivery_capacity'])
-        print(valid_coordinates_df.head())  # Debug print to verify data
-
         # Use row numbers (index) directly
         valid_coordinates_df['row_number'] = valid_coordinates_df.index
         capacity = valid_coordinates_df.set_index('row_number').to_dict(orient='index')
 
         for sp in self.service_points:
-            print(
-                f"Service Point {sp.SP_id} - Assigned Squares: {sp.assigned_squares}")  # Debug print to verify assigned squares
-
             # Calculate the total pickup using row numbers
             sp.pickup = sum(
                 capacity[row_num]['daily_pickup_capacity'] for row_num in sp.assigned_squares if row_num in capacity)
-
-            print(f"Service Point {sp.SP_id} - Total Pickup: {sp.pickup}")  # Debug print to verify pickup calculation
 
         cost = 0
         for sp in self.service_points:
@@ -143,10 +136,6 @@ class InitialSolution:
                 closest_sp.assigned_squares.append(self.distance_df.index[Square_ID])
             else:
                 print(f"No closest service point found for square ID: {Square_ID}")
-
-        # Output the results
-        for sp in self.service_points:
-            print(f"Service Point {sp.SP_id} is assigned to squares: {sp.assigned_squares}")
 
     def modify_service_point(self, valid_coordinates):
         """
@@ -193,11 +182,12 @@ class InitialSolution:
         This method randomly selects a service point from the list and removes it.
         """
         if self.service_points:
-            deleted_sp = self.service_points.pop(random.randint(0, len(self.service_points) - 1))
+            random_index = random.randint(0, len(self.service_points) - 1)
+            deleted_sp = self.service_points.pop(random_index)
+            print(f"Random index selected: {random_index}")
             print(f"Random Service Point {deleted_sp.SP_id} deleted")
 
             self.assign_squares_to_service_points(valid_coordinates)
-        return deleted_sp
 
     def select_random_coordinate(self, valid_coordinates):
         """
@@ -293,6 +283,8 @@ def simulated_annealing(current_cost, new_cost, temperature):
     return probability >= math_random
 
 
+import copy
+
 def main():
     # Load data
     sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/fakesol.csv'
@@ -304,26 +296,25 @@ def main():
     distance_df = pd.read_csv(distance_matrix)
 
     # Generate initial solution
-    initial_solution = InitialSolution(ServiceP, distance_df)
-    current_cost = initial_solution.total_cost(valid_coordinates)
+    current_solution = InitialSolution(ServiceP, distance_df)
+    current_cost = current_solution.total_cost(valid_coordinates)
 
     print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
 
-    initial_temperature = 400000
-    temperature = initial_temperature
+    initial_temperature = 400000  # Initial temperature for the simulated annealing process
 
-    for i in range(1, 350):
+    for i in range(1, 3500):
         print(f"Iteration {i}, current cost: {current_cost}")
 
         # Generate a new solution by modifying, adding, or deleting a service point
-        new_solution = InitialSolution(ServiceP.copy(), distance_df.copy())  # Ensure a deep copy if necessary
+        new_solution = current_solution  # Use deep copy for service points
         rand = random.random()
 
-        if rand <= 0.3:
+        if rand <= 0.15:
             print(f"Iteration {i}: Delete Service Point")
             new_solution.delete_service_point(valid_coordinates)
-        elif rand <= 0.4:
+        elif rand <= 0.3:
             print(f"Iteration {i}: Add Service Point")
             new_solution.add_service_point(valid_coordinates)
         else:
@@ -343,8 +334,6 @@ def main():
 
     print("FINAL SOLUTION")
     print(f"Final cost: {current_cost}")
-    print("Solution is valid:", True)
-
 
 if __name__ == "__main__":
     main()
