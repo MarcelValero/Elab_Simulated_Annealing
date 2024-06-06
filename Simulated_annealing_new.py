@@ -80,7 +80,7 @@ class InitialSolution:
     def __repr__(self):
         return f"InitialSolution(service_points={self.service_points})"
 
-    def total_cost(self):
+    def total_cost(self, valid_coordinates):
         """
         Calculate the cost of the initial solution.
 
@@ -94,12 +94,29 @@ class InitialSolution:
         for sp in self.service_points:
             sp.total_dist = sum(self.distance_df[sp.SP_id][square_id] for square_id in sp.assigned_squares)
 
+        # Assuming valid_coordinates is defined elsewhere in your code
+        valid_coordinates_df = pd.DataFrame(valid_coordinates, columns=['Square_ID', 'coordinate.x', 'coordinate.y',
+                                                                        'daily_pickup_capacity',
+                                                                        'daily_delivery_capacity'])
+        print(valid_coordinates_df.head())  # Debug print to verify data
+
+        # Use row numbers (index) directly
+        valid_coordinates_df['row_number'] = valid_coordinates_df.index
+        capacity = valid_coordinates_df.set_index('row_number').to_dict(orient='index')
+
         for sp in self.service_points:
-            print(f"{sp.total_dist}")
+            print(
+                f"Service Point {sp.SP_id} - Assigned Squares: {sp.assigned_squares}")  # Debug print to verify assigned squares
+
+            # Calculate the total pickup using row numbers
+            sp.pickup = sum(
+                capacity[row_num]['daily_pickup_capacity'] for row_num in sp.assigned_squares if row_num in capacity)
+
+            print(f"Service Point {sp.SP_id} - Total Pickup: {sp.pickup}")  # Debug print to verify pickup calculation
 
         cost = 0
         for sp in self.service_points:
-            cost += 75000 + 0.1 * sp.pickup + 0.5 * sp.total_dist
+            cost += 75000 + 0.1 * (sp.pickup*30) + 0.5 * sp.total_dist
 
         return cost
 
@@ -110,22 +127,26 @@ class InitialSolution:
         for sp in self.service_points:
             sp.assigned_squares = []  # Reset assigned squares
 
-        for square_id in self.distance_df.index:  # iterate over all the squares
+        for Square_ID in self.distance_df.index:  # iterate over all the squares
             min_distance = float('inf')
             closest_sp = None
             for sp in self.service_points:
                 try:
-                    distance = self.distance_df.at[square_id, sp.SP_id]
+                    distance = self.distance_df.at[Square_ID, sp.SP_id]
                     if distance < min_distance:
                         min_distance = distance
                         closest_sp = sp
                 except KeyError:
-                    print(f"No valid distance entry for SP_id: {sp.SP_id} and square_id: {square_id}")
+                    print(f"No valid distance entry for SP_id: {sp.SP_id} and square_id: {Square_ID}")
                     continue
             if closest_sp is not None:
-                closest_sp.assigned_squares.append(square_id)
+                closest_sp.assigned_squares.append(self.distance_df.index[Square_ID])
             else:
-                print(f"No closest service point found for square ID: {square_id}")
+                print(f"No closest service point found for square ID: {Square_ID}")
+
+        # Output the results
+        for sp in self.service_points:
+            print(f"Service Point {sp.SP_id} is assigned to squares: {sp.assigned_squares}")
 
     def modify_service_point(self, valid_coordinates):
         """
@@ -275,8 +296,8 @@ def simulated_annealing(current_cost, new_cost, temperature):
 def main():
     # Load data
     sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/fakesol.csv'
-    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2.csv'
-    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered.csv'
+    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2_sort.csv'
+    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered_fix_sort.csv'
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
@@ -284,7 +305,7 @@ def main():
 
     # Generate initial solution
     initial_solution = InitialSolution(ServiceP, distance_df)
-    current_cost = initial_solution.total_cost()
+    current_cost = initial_solution.total_cost(valid_coordinates)
 
     print(f"Initial cost: {current_cost}")
     print(f"Number of Service Points: {len(ServiceP)}")
@@ -309,7 +330,7 @@ def main():
             print(f"Iteration {i}: Modify Service Point")
             new_solution.modify_service_point(valid_coordinates)
 
-        new_cost = new_solution.total_cost()
+        new_cost = new_solution.total_cost(valid_coordinates)
         temperature = initial_temperature / (i + 1)  # Update temperature
 
         # Apply the simulated annealing acceptance criterion
