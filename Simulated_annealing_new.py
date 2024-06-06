@@ -147,11 +147,16 @@ class InitialSolution:
         :param valid_coordinates: List of tuples representing valid (x, y) coordinates
         :type valid_coordinates: list of tuple
         """
+        if not self.service_points:
+            print("Error: No service points available to modify.")
+            return
+
         sp = random.choice(self.service_points)
         new_id, new_x, new_y, new_cap, new_del = select_random_coordinate(valid_coordinates)
         sp.SP_id = new_id
         sp.x = new_x
         sp.y = new_y
+
 
         self.assign_squares_to_service_points(valid_coordinates)
         print(f"Service Point {sp.SP_id} coordinates modified to ({new_x}, {new_y})")
@@ -262,7 +267,7 @@ def select_random_coordinate(valid_coordinates):
     return random.choice(valid_coordinates)
 
 
-def simulated_annealing(current_cost, new_cost, temperature):
+def simulated_annealing(current_cost, new_cost, temperature, min_temp = 1):
     """
     Perform the simulated annealing acceptance criterion.
 
@@ -275,6 +280,11 @@ def simulated_annealing(current_cost, new_cost, temperature):
     :return: Whether the new solution should be accepted
     :rtype: bool
     """
+    if new_cost == 0:
+        return False
+
+    temperature = max(temperature, min_temp)
+
     exponent = (current_cost - new_cost) / temperature
 
     probability = math.exp(exponent)
@@ -287,9 +297,9 @@ import copy
 
 def main():
     # Load data
-    sp_initial = '/Users/valero/Elab 2/Case 2/Datasets/fakesol.csv'
-    all_neighborhoods = '/Users/valero/Elab 2/Case 2/Datasets/predictions_milestone2_sort.csv'
-    distance_matrix = '/Users/valero/Elab 2/Case 2/Datasets/distance_matrix_km_filtered_fix_sort.csv'
+    sp_initial = '/Users/yuli/Documents/UNI/ELABII/Elab II/Initial_sp.csv'
+    all_neighborhoods = '/Users/yuli/Documents/UNI/ELABII/Elab II/predictions_milestone2.csv'
+    distance_matrix = '/Users/yuli/Documents/UNI/ELABII/Elab II/distance_matrix_km_filtered.csv'
 
     ServiceP = create_service_points(sp_initial)
     valid_coordinates = load_valid_coordinates(all_neighborhoods)
@@ -334,6 +344,12 @@ def main():
 
     print("FINAL SOLUTION")
     print(f"Final cost: {current_cost}")
+    print("Service Points IDs:")
+    print([sp.SP_id for sp in initial_solution.service_points])
+    print("Service Points total delivery distance:")
+    print([sp.total_dist for sp in initial_solution.service_points])
+    print("Service Points total pick up:")
+    print([sp.pickup for sp in initial_solution.service_points])
 
 if __name__ == "__main__":
     main()
