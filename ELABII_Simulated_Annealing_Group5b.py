@@ -5,8 +5,8 @@ import math
 
 
 # Author:
-#   Marcel Valero i6315821
-#   Date: 2021-09-30
+#   Elab Group 5B
+#   Date: 2024-06-06
 
 
 # Create object SP (for service point)
